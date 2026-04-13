@@ -1,0 +1,37 @@
+Traceback (most recent call last):
+  File "/Users/ankitkumar/.gemini/antigravity/scratch/smart_traffic_system/main.py", line 4, in <module>
+    from detector import VehicleDetector
+  File "/Users/ankitkumar/.gemini/antigravity/scratch/smart_traffic_system/detector.py", line 4, in <module>
+    from ultralytics import YOLO
+  File "/Users/ankitkumar/.gemini/antigravity/scratch/smart_traffic_system/venv/lib/python3.14/site-packages/ultralytics/__init__.py", line 5, in <module>
+    from ultralytics.data.explorer.explorer import Explorer
+  File "/Users/ankitkumar/.gemini/antigravity/scratch/smart_traffic_system/venv/lib/python3.14/site-packages/ultralytics/data/explorer/__init__.py", line 3, in <module>
+    from .utils import plot_query_result
+  File "/Users/ankitkumar/.gemini/antigravity/scratch/smart_traffic_system/venv/lib/python3.14/site-packages/ultralytics/data/explorer/utils.py", line 8, in <module>
+    import pandas as pd
+  File "/Users/ankitkumar/.gemini/antigravity/scratch/smart_traffic_system/venv/lib/python3.14/site-packages/pandas/__init__.py", line 49, in <module>
+    from pandas.core.api import (
+    ...<62 lines>...
+    )
+  File "/Users/ankitkumar/.gemini/antigravity/scratch/smart_traffic_system/venv/lib/python3.14/site-packages/pandas/core/api.py", line 47, in <module>
+    from pandas.core.groupby import (
+    ...<2 lines>...
+    )
+  File "/Users/ankitkumar/.gemini/antigravity/scratch/smart_traffic_system/venv/lib/python3.14/site-packages/pandas/core/groupby/__init__.py", line 1, in <module>
+    from pandas.core.groupby.generic import (
+    ...<3 lines>...
+    )
+  File "/Users/ankitkumar/.gemini/antigravity/scratch/smart_traffic_system/venv/lib/python3.14/site-packages/pandas/core/groupby/generic.py", line 68, in <module>
+    from pandas.core.frame import DataFrame
+  File "/Users/ankitkumar/.gemini/antigravity/scratch/smart_traffic_system/venv/lib/python3.14/site-packages/pandas/core/frame.py", line 149, in <module>
+    from pandas.core.generic import (
+    ...<2 lines>...
+    )
+  File "/Users/ankitkumar/.gemini/antigravity/scratch/smart_traffic_system/venv/lib/python3.14/site-packages/pandas/core/generic.py", line 152, in <module>
+    from pandas.core import (
+    ...<7 lines>...
+    )
+  File "/Users/ankitkumar/.gemini/antigravity/scratch/smart_traffic_system/venv/lib/python3.14/site-packages/pandas/core/indexing.py", line 21, in <module>
+    from pandas._libs.indexing import NDFrameIndexerBase
+  File "<frozen importlib._bootstrap>", line 648, in parent
+KeyboardInterrupt
