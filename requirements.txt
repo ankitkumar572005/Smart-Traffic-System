@@ -4,3 +4,5 @@ easyocr==1.7.1
 opencv-python-headless==4.9.0.80
 pandas==2.2.1
 numpy<2.0.0
+streamlit
+

@@ -4,15 +4,17 @@ from tracker import VehicleTracker
 from detector import VehicleDetector
 from utils import save_to_csv, draw_info
 
-def main():
-    video_path = 'sample_traffic.mp4'
-    csv_path = 'output/traffic_log.csv'
-    
+def process_video(video_path, output_mp4, csv_path, progress_bar=None, status_text=None):
+    from tracker import VehicleTracker
+    from detector import VehicleDetector
+    from utils import save_to_csv, draw_info
+
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         print(f"Error: Cannot open video file {video_path}")
-        print("Please ensure you run 'wget https://github.com/intel-iot-devkit/sample-videos/raw/master/car-detection.mp4 -O sample_traffic.mp4'")
-        return
+        return False
+
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
     # Video properties
     width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -20,7 +22,7 @@ def main():
     fps    = int(cap.get(cv2.CAP_PROP_FPS))
     
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter('output/annotated_traffic.mp4', fourcc, fps, (width, height))
+    out = cv2.VideoWriter(output_mp4, fourcc, fps, (width, height))
 
     # Initialize Engine
     tracker = VehicleTracker(max_age=30)
@@ -119,14 +121,23 @@ def main():
         # Output frame
         out.write(frame)
 
-        # Logging output to console occasionally so we know it's not frozen
-        if frame_count % 30 == 0:
-            print(f"Processed frame {frame_count} - Total Counted: {total_count}...")
-
+        if progress_bar and total_frames > 0:
+            if frame_count % 5 == 0:
+                progress = min(frame_count / total_frames, 1.0)
+                progress_bar.progress(progress)
+        if status_text and frame_count % 30 == 0:
+            status_text.text(f"Processed frame {frame_count}/{total_frames} - Total Counted: {total_count}...")
+            
     cap.release()
     out.release()
     cv2.destroyAllWindows()
-    print("Processing complete. Video output and CSV data saved to 'output/' folder.")
+    
+    if progress_bar:
+        progress_bar.progress(1.0)
+    if status_text:
+        status_text.text("Processing complete!")
+        
+    return True
 
 if __name__ == "__main__":
-    main()
+    process_video('sample_traffic.mp4', 'output/annotated_traffic.mp4', 'output/traffic_log.csv')
