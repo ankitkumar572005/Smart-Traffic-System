@@ -85,16 +85,21 @@ def process_video(video_path, output_mp4, csv_path, progress_bar=None, status_te
             # --- Continuous processing zone ---
             line_y = line_start[1]
             
-            # Try to read plate/helmet continuously while near the center screen if not already read
-            # This is vastly superior to single-frame one-shot reads
-            zone_tolerance = int(height * 0.25)
+            # Try to read plate/helmet continuously while near the center screen
+            # we keep trying if we haven't found a definitive plate/helmet yet
+            zone_tolerance = int(height * 0.35) # Expanded zone for more capture attempts
             if abs(cy - line_y) < zone_tolerance:
                 if cache['plate'] is None:
                     plate = detector.read_license_plate(frame, clamped_ltrb)
                     if plate: cache['plate'] = plate
                         
-                if cache['class_name'] == 'motorcycle' and cache['helmet'] is None:
-                    cache['helmet'] = detector.check_helmet(frame, clamped_ltrb, track_id)
+                if cache['class_name'] == 'motorcycle':
+                    # Only stop if we have a definitive "Helmet" or "No Helmet"
+                    # We continue re-checking if we get "Checking..."
+                    if cache['helmet'] is None or cache['helmet'] == "Checking...":
+                        status = detector.check_helmet(frame, clamped_ltrb, track_id)
+                        if status != "Checking...":
+                            cache['helmet'] = status
 
             # --- Event: Line Crossing (Counting) ---
             crossed_downward = cache['last_y'] < line_y and cy >= line_y
