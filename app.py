@@ -43,24 +43,32 @@ with tab2:
                 if os.path.exists(target_out): os.remove(target_out)
                 
                 try:
-                    # Try downloading just the first 20 seconds (safe for long videos)
-                    subprocess.run(
-                        ["yt-dlp", "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4", 
-                         "--download-sections", "*00:00-00:20", 
-                         "--force-keyframes-at-cuts", 
-                         "-o", target_out, yt_url],
-                        check=True
-                    )
-                except subprocess.CalledProcessError:
-                    # If slicing fails (often happens with YouTube Shorts because they are already < 20s), 
-                    # fallback to downloading the entire video but capped at 50MB to protect memory.
+                    import yt_dlp
+                    # Attempt 1: Safe 20s clipped download
+                    ydl_opts = {
+                        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4',
+                        'outtmpl': target_out,
+                        'download_ranges': yt_dlp.utils.download_range_func(None, [(0, 20)]),
+                        'force_keyframes_at_cuts': True,
+                        'quiet': True
+                    }
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        ydl.download([yt_url])
+                except Exception:
+                    # Attempt 2: Fallback to full download (capped at 50MB) if ffmpeg slicing fails for Shorts
                     if os.path.exists(target_out): os.remove(target_out)
-                    subprocess.run(
-                        ["yt-dlp", "-f", "best[ext=mp4]", "--max-filesize", "50M", "-o", target_out, yt_url],
-                        check=True
-                    )
-                except Exception as e:
-                    st.error(f"Failed to initiate download: {e}")
+                    try:
+                        ydl_opts_fallback = {
+                            'format': 'best[ext=mp4]/best', 
+                            'max_filesize': 50 * 1024 * 1024,
+                            'outtmpl': target_out,
+                            'noplaylist': True,
+                            'quiet': True
+                        }
+                        with yt_dlp.YoutubeDL(ydl_opts_fallback) as ydl_fb:
+                            ydl_fb.download([yt_url])
+                    except Exception as e_fallback:
+                        st.error(f"Download heavily failed: {e_fallback}")
                     
                 if os.path.exists(target_out):
                     input_path = target_out
