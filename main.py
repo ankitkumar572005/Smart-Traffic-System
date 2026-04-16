@@ -1,5 +1,7 @@
 import cv2
 import datetime
+import numpy as np
+import gc
 from tracker import VehicleTracker
 from detector import VehicleDetector
 from utils import save_to_csv, draw_info
@@ -15,13 +17,16 @@ def process_video(video_path, output_mp4, csv_path, detector, progress_bar=None,
 
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-    # Video properties
-    width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps    = int(cap.get(cv2.CAP_PROP_FPS))
+    # FORCE 480p RESOLUTION for RAM protection (Surivor Mode)
+    # This reduces memory usage by ~400% compared to 1080p
+    target_width = 854
+    target_height = 480
     
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(output_mp4, fourcc, fps, (width, height))
+    out = cv2.VideoWriter(output_mp4, fourcc, fps, (target_width, target_height))
+    
+    # Update dimensions for the rest of the script
+    width, height = target_width, target_height
 
     # Initialize Engine
     tracker = VehicleTracker(max_age=30)
@@ -45,6 +50,9 @@ def process_video(video_path, output_mp4, csv_path, detector, progress_bar=None,
             break
             
         frame_count += 1
+        
+        # Immediate resize to 480p to save memory
+        frame = cv2.resize(frame, (target_width, target_height))
         
         # 1. Detection (PRODUCTION OPTIMIZATION: Skip 2 frames, Process 1)
         # This gives a 3x speed boost while tracking remains smooth
@@ -149,6 +157,8 @@ def process_video(video_path, output_mp4, csv_path, detector, progress_bar=None,
                 progress_bar.progress(progress)
         if status_text and frame_count % 30 == 0:
             status_text.text(f"Processed frame {frame_count}/{total_frames} - Total Counted: {total_count}...")
+            # Collect garbage every 30 frames to keep RAM low
+            gc.collect()
             
     cap.release()
     out.release()

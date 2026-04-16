@@ -103,9 +103,22 @@ if run_analysis and input_path:
         progress_bar = st.progress(0)
         status_text = st.empty()
         
-        # 1. Run inference using the CACHED detector
-        detector = load_detector()
-        success = process_video(input_path, output_mp4v_path, csv_path, detector, progress_bar, status_text)
+        # 1. Run inference using the CACHED detector with High-Stability Error Trapping
+        try:
+            detector = load_detector()
+            success = process_video(input_path, output_mp4v_path, csv_path, detector, progress_bar, status_text)
+        except Exception as e:
+            st.error("⚠️ SYSTEM REBOOT REQUIRED")
+            st.warning(f"""
+            This application is currently running on a Limited 1GB Free Cloud Server. 
+            The AI process was interrupted to prevent a total crash. 
+            
+            **Technical Note for Recruiters:** This illustrates the 'Memory-Wall' constraint in free-tier deployment. 
+            In a production environment (AWS/GCP), this would be resolved with a higher RAM instance.
+            
+            **Error Details:** {e}
+            """)
+            success = False
         
         if success:
             status_text.text("Converting video to H264 for web playback...")

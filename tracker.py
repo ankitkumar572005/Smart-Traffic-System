@@ -2,8 +2,9 @@ from deep_sort_realtime.deepsort_tracker import DeepSort
 
 class VehicleTracker:
     def __init__(self, max_age=30):
-        # Initialize DeepSORT tracker configured for real-time performance
-        self.tracker = DeepSort(max_age=max_age, embedder="mobilenet", half=True)
+        # Disable the AI embedder to save massive amounts of RAM on free servers
+        # We switch to pure motion-based tracking
+        self.tracker = DeepSort(max_age=max_age, embedder=None)
 
     def update(self, detections, frame):
         """
