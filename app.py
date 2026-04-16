@@ -15,22 +15,53 @@ Upload a traffic video to analyze vehicle counts, bounding boxes, license plates
 os.makedirs("uploads", exist_ok=True)
 os.makedirs("output", exist_ok=True)
 
-uploaded_file = st.file_uploader("Upload a traffic video (.mp4)", type=["mp4"])
+st.markdown("### Choose an input method:")
+
+tab1, tab2, tab3 = st.tabs(["Upload File", "YouTube Link", "Demo Video"])
 
 run_analysis = False
 input_path = None
 
-if uploaded_file is not None:
-    st.video(uploaded_file)
-    if st.button("Run AI Analysis", type="primary"):
-        input_path = os.path.join("uploads", uploaded_file.name)
-        with open(input_path, "wb") as f:
-            f.write(uploaded_file.getbuffer())
-        run_analysis = True
-else:
+with tab1:
+    uploaded_file = st.file_uploader("Upload a traffic video (.mp4)", type=["mp4"])
+    if uploaded_file is not None:
+        st.video(uploaded_file)
+        if st.button("Run AI Analysis", type="primary", key="file_btn"):
+            input_path = os.path.join("uploads", uploaded_file.name)
+            with open(input_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+            run_analysis = True
+
+with tab2:
+    yt_url = st.text_input("Paste a YouTube Video Link:")
+    if yt_url:
+        st.video(yt_url)
+        st.info("Note: To protect server resources, only the first 20 seconds will be analyzed!")
+        if st.button("Run AI on YouTube Clip", type="primary", key="yt_btn"):
+            with st.spinner("Downloading 20-second clip from YouTube..."):
+                target_out = "uploads/youtube_vid.mp4"
+                if os.path.exists(target_out): os.remove(target_out)
+                
+                try:
+                    subprocess.run(
+                        ["yt-dlp", "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4", 
+                         "--download-sections", "*00:00-00:20", 
+                         "--force-keyframes-at-cuts", 
+                         "-o", target_out, yt_url],
+                        check=True
+                    )
+                    if os.path.exists(target_out):
+                        input_path = target_out
+                        run_analysis = True
+                    else:
+                        st.error("Download failed to create MP4.")
+                except Exception as e:
+                    st.error(f"Failed to download video: {e}")
+
+with tab3:
     st.info("🎥 Don't have a traffic video handy? Run the AI on the built-in demo track!")
     if os.path.exists("sample_traffic.mp4"):
-        if st.button("Run AI on Demo Video", type="primary"):
+        if st.button("Run AI on Demo Video", type="primary", key="demo_btn"):
             input_path = "sample_traffic.mp4"
             run_analysis = True
 
