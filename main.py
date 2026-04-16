@@ -82,22 +82,30 @@ def process_video(video_path, output_mp4, csv_path, progress_bar=None, status_te
                 
             cache = vehicle_cache[track_id]
             
-            # --- Event: Line Crossing (Counting) ---
+            # --- Continuous processing zone ---
             line_y = line_start[1]
             
-            # We check if vehicle center crossed the line bounding downwards
-            # A more robust solution uses the exact `check_intersection` per frame delta.
-            if cache['last_y'] < line_y and cy >= line_y:
+            # Try to read plate/helmet continuously while near the center screen if not already read
+            # This is vastly superior to single-frame one-shot reads
+            zone_tolerance = int(height * 0.25)
+            if abs(cy - line_y) < zone_tolerance:
+                if cache['plate'] is None:
+                    plate = detector.read_license_plate(frame, clamped_ltrb)
+                    if plate: cache['plate'] = plate
+                        
+                if cache['class_name'] == 'motorcycle' and cache['helmet'] is None:
+                    cache['helmet'] = detector.check_helmet(frame, clamped_ltrb, track_id)
+
+            # --- Event: Line Crossing (Counting) ---
+            crossed_downward = cache['last_y'] < line_y and cy >= line_y
+            crossed_upward = cache['last_y'] > line_y and cy <= line_y
+            
+            if crossed_downward or crossed_upward:
                 if track_id not in counted_ids:
                     counted_ids.add(track_id)
                     total_count += 1
                     
-                    # Target close up reading
-                    if cache['class_name'] == 'motorcycle':
-                        cache['helmet'] = detector.check_helmet(frame, clamped_ltrb, track_id)
-                    cache['plate'] = detector.read_license_plate(frame, clamped_ltrb)
-                    
-                    # Record entry
+                    # Record entry at the moment of crossing
                     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     save_to_csv(csv_path, [
                         timestamp, track_id, cache['class_name'], 

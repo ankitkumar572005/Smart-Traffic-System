@@ -61,7 +61,7 @@ class VehicleDetector:
             # Fallback behavior: We run OCR on the bottom 40% of the vehicle
             # This is a heuristic approach to find license plates without a dedicated detector
             h = y2 - y1
-            roi_y1 = int(y1 + h * 0.6)
+            roi_y1 = int(y1 + h * 0.4)
             roi = frame[roi_y1:y2, x1:x2]
             
             # Grayscale and threshold to assist OCR
@@ -75,7 +75,7 @@ class VehicleDetector:
                     
                     # Basic cleanup - keep alphanumeric
                     clean_text = ''.join(e for e in text if e.isalnum()).upper()
-                    if conf > 0.2 and len(clean_text) >= 4:
+                    if conf > 0.15 and len(clean_text) >= 3:
                         plate_text = clean_text
         return plate_text
 
