@@ -1,5 +1,7 @@
 # Smart Traffic Monitoring System
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://smart-traffic-system-mpm6axqd6hd9jblrjkiiyd.streamlit.app/)
+
 An AI/ML-based vehicle detection, tracking, counting, and license-plate/helmet identification script using YOLOv8, DeepSORT, and EasyOCR.
 
 ## Features Included
