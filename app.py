@@ -43,6 +43,7 @@ with tab2:
                 if os.path.exists(target_out): os.remove(target_out)
                 
                 try:
+                    # Try downloading just the first 20 seconds (safe for long videos)
                     subprocess.run(
                         ["yt-dlp", "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/mp4", 
                          "--download-sections", "*00:00-00:20", 
@@ -50,13 +51,22 @@ with tab2:
                          "-o", target_out, yt_url],
                         check=True
                     )
-                    if os.path.exists(target_out):
-                        input_path = target_out
-                        run_analysis = True
-                    else:
-                        st.error("Download failed to create MP4.")
+                except subprocess.CalledProcessError:
+                    # If slicing fails (often happens with YouTube Shorts because they are already < 20s), 
+                    # fallback to downloading the entire video but capped at 50MB to protect memory.
+                    if os.path.exists(target_out): os.remove(target_out)
+                    subprocess.run(
+                        ["yt-dlp", "-f", "best[ext=mp4]", "--max-filesize", "50M", "-o", target_out, yt_url],
+                        check=True
+                    )
                 except Exception as e:
-                    st.error(f"Failed to download video: {e}")
+                    st.error(f"Failed to initiate download: {e}")
+                    
+                if os.path.exists(target_out):
+                    input_path = target_out
+                    run_analysis = True
+                else:
+                    st.error("Download failed to create MP4.")
 
 with tab3:
     st.info("🎥 Don't have a traffic video handy? Run the AI on the built-in demo track!")
