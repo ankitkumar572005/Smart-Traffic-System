@@ -66,12 +66,11 @@ class VehicleDetector:
             # Inference using custom plate model on the vehicle ROI
             pass
         else:
-            # Fallback behavior: We run OCR on the bottom 40% of the vehicle
-            # This is a heuristic approach to find license plates without a dedicated detector
-            # Enhancement for OCR: 
-            # 1. Upscale the ROI (small plates are unreadable by OCR)
-            # 2. Convert to Grayscale
-            # 3. Apply CLAHE (Contrast Limited Adaptive Histogram Equalization)
+            # Fallback behavior: We run OCR on the bottom 60% of the vehicle
+            h = y2 - y1
+            roi_y1 = int(y1 + h * 0.4)
+            roi = frame[roi_y1:y2, x1:x2]
+            
             if roi.shape[0] > 5 and roi.shape[1] > 5:
                 # Upscale by 4x for better character recognition
                 roi = cv2.resize(roi, None, fx=4, fy=4, interpolation=cv2.INTER_CUBIC)
