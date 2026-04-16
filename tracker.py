@@ -2,9 +2,9 @@ from deep_sort_realtime.deepsort_tracker import DeepSort
 
 class VehicleTracker:
     def __init__(self, max_age=30):
-        # Disable the AI embedder to save massive amounts of RAM on free servers
-        # We switch to pure motion-based tracking
-        self.tracker = DeepSort(max_age=max_age, embedder=None)
+        # We restore the 'mobilenet' embedder (very light ~20MB). 
+        # Since we removed the massive EasyOCR (~700MB), the app is now safe!
+        self.tracker = DeepSort(max_age=max_age, embedder='mobilenet', half=True)
 
     def update(self, detections, frame):
         """
