@@ -48,8 +48,20 @@ def process_video(video_path, output_mp4, csv_path, progress_bar=None, status_te
             
         frame_count += 1
         
-        # 1. Detection
-        detections = detector.detect_vehicles(frame)
+        # 1. Detection (Optimized for speed: Skip every 2nd frame)
+        if frame_count % 2 == 0:
+            # Resize for AI (YOLO internally uses 640x640, so we match it for maximum speed)
+            scale = 640 / max(width, height)
+            ai_frame = cv2.resize(frame, (0,0), fx=scale, fy=scale)
+            detections_raw = detector.detect_vehicles(ai_frame)
+            
+            # Rescale boxes back to original size for tracking
+            detections = []
+            for det in detections_raw:
+                det['box'] = [b / scale for b in det['box']]
+                detections.append(det)
+        else:
+            detections = [] # Tracker will predict based on previous motion
         
         # 2. Tracking
         tracks = tracker.update(detections, frame)
@@ -87,8 +99,9 @@ def process_video(video_path, output_mp4, csv_path, progress_bar=None, status_te
             
             # Try to read plate/helmet continuously while near the center screen
             # we keep trying if we haven't found a definitive plate/helmet yet
-            zone_tolerance = int(height * 0.35) # Expanded zone for more capture attempts
-            if abs(cy - line_y) < zone_tolerance:
+            # SPEED OPTIMIZATION: Only run expensive OCR/Helmet logic every 5 frames
+            zone_tolerance = int(height * 0.35) 
+            if abs(cy - line_y) < zone_tolerance and frame_count % 5 == 0:
                 if cache['plate'] is None:
                     plate = detector.read_license_plate(frame, clamped_ltrb)
                     if plate: cache['plate'] = plate
