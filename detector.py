@@ -2,8 +2,9 @@ import os
 import cv2
 import random
 import numpy as np
+import numpy as np
+import pytesseract
 from ultralytics import YOLO
-import easyocr
 
 class VehicleDetector:
     def __init__(self, plate_model_path=None, helmet_model_path=None):
@@ -11,9 +12,9 @@ class VehicleDetector:
         # Automatically downloads yolov8n.pt if not present locally
         self.model = YOLO('models/yolov8n.pt') 
         
-        print("Initializing EasyOCR...")
-        # gpu=False allows it to run smoothly on machines without CUDA
-        self.ocr_reader = easyocr.Reader(['en'], gpu=False) 
+        # Zero-RAM OCR initialization (Tesseract uses shared system memory)
+        # No heavy reader object needed here
+        pass 
         
         # Target classes from COCO dataset (we ignore pedestrians)
         self.target_classes = {
@@ -85,15 +86,14 @@ class VehicleDetector:
                 kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
                 gray = cv2.filter2D(gray, -1, kernel)
                 
-                results = self.ocr_reader.readtext(gray)
-                if results:
-                    # Get the most confident text block
-                    extracted = max(results, key=lambda x: x[2])
-                    text, conf = extracted[1], extracted[2]
-                    
+                # Tesseract OCR: Specifically looking for alphanumeric characters
+                custom_config = r'--oem 3 --psm 7 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+                text = pytesseract.image_to_string(gray, config=custom_config)
+                
+                if text:
                     # Basic cleanup - keep alphanumeric
                     clean_text = ''.join(e for e in text if e.isalnum()).upper()
-                    if conf > 0.15 and len(clean_text) >= 3:
+                    if len(clean_text) >= 3:
                         plate_text = clean_text
         return plate_text
 

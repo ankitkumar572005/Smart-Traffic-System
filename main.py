@@ -16,11 +16,12 @@ def process_video(video_path, output_mp4, csv_path, detector, progress_bar=None,
         return False
 
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    fps = cap.get(cv2.CAP_PROP_FPS)
 
-    # FORCE 480p RESOLUTION for RAM protection (Surivor Mode)
-    # This reduces memory usage by ~400% compared to 1080p
-    target_width = 854
-    target_height = 480
+    # FORCE 360p RESOLUTION for RAM protection (Rescue Mode)
+    # This reduces memory usage aggressively to survive 1GB RAM
+    target_width = 640
+    target_height = 360
     
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter(output_mp4, fourcc, fps, (target_width, target_height))

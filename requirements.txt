@@ -4,7 +4,7 @@ torchvision
 torchaudio
 ultralytics
 deep-sort-realtime
-easyocr
+pytesseract
 opencv-python-headless
 pandas
 numpy<2.0.0
