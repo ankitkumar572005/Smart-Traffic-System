@@ -3,6 +3,12 @@ import os
 import subprocess
 import shutil
 from main import process_video
+from detector import VehicleDetector
+
+@st.cache_resource
+def load_detector():
+    """Load the model once and keep it in cache for speed and RAM safety."""
+    return VehicleDetector()
 
 st.set_page_config(page_title="Smart Traffic System", page_icon="🚦", layout="centered")
 
@@ -97,8 +103,9 @@ if run_analysis and input_path:
         progress_bar = st.progress(0)
         status_text = st.empty()
         
-        # 1. Run inference
-        success = process_video(input_path, output_mp4v_path, csv_path, progress_bar, status_text)
+        # 1. Run inference using the CACHED detector
+        detector = load_detector()
+        success = process_video(input_path, output_mp4v_path, csv_path, detector, progress_bar, status_text)
         
         if success:
             status_text.text("Converting video to H264 for web playback...")

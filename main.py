@@ -4,9 +4,8 @@ from tracker import VehicleTracker
 from detector import VehicleDetector
 from utils import save_to_csv, draw_info
 
-def process_video(video_path, output_mp4, csv_path, progress_bar=None, status_text=None):
+def process_video(video_path, output_mp4, csv_path, detector, progress_bar=None, status_text=None):
     from tracker import VehicleTracker
-    from detector import VehicleDetector
     from utils import save_to_csv, draw_info
 
     cap = cv2.VideoCapture(video_path)
@@ -26,8 +25,7 @@ def process_video(video_path, output_mp4, csv_path, progress_bar=None, status_te
 
     # Initialize Engine
     tracker = VehicleTracker(max_age=30)
-    detector = VehicleDetector() 
-    
+    # Detector passed from app.py cached resource    
     # Define Virtual Line (Horizontal line in lower-middle screen)
     line_start = (0, int(height * 0.6))
     line_end = (width, int(height * 0.6))
@@ -48,18 +46,22 @@ def process_video(video_path, output_mp4, csv_path, progress_bar=None, status_te
             
         frame_count += 1
         
-        # 1. Detection (Optimized with 640px internal scaling, but run on every frame for tracking stability)
-        scale = 640 / max(width, height)
-        ai_frame = cv2.resize(frame, (0, 0), fx=scale, fy=scale)
-        detections_raw = detector.detect_vehicles(ai_frame)
+        # 1. Detection (PRODUCTION OPTIMIZATION: Skip 2 frames, Process 1)
+        # This gives a 3x speed boost while tracking remains smooth
+        if frame_count % 3 == 0:
+            scale = 640 / max(width, height)
+            ai_frame = cv2.resize(frame, (0, 0), fx=scale, fy=scale)
+            detections_raw = detector.detect_vehicles(ai_frame)
+            
+            # Rescale boxes back to original size
+            detections = []
+            for det in detections_raw:
+                det['box'] = [b / scale for b in det['box']]
+                detections.append(det)
+        else:
+            detections = [] # Tracker predicts for the missing frames
         
-        # Rescale boxes back to original size for tracking and rendering
-        detections = []
-        for det in detections_raw:
-            det['box'] = [b / scale for b in det['box']]
-            detections.append(det)
-        
-        # 2. Tracking
+        # 2. Tracking (Always run to maintain smooth path)
         tracks = tracker.update(detections, frame)
 
         # 3. Handle specific logic per tracked moving vehicle
@@ -93,18 +95,16 @@ def process_video(video_path, output_mp4, csv_path, progress_bar=None, status_te
             # --- Continuous processing zone ---
             line_y = line_start[1]
             
-            # Try to read plate/helmet continuously while near the center screen
-            # we keep trying if we haven't found a definitive plate/helmet yet
-            # SPEED OPTIMIZATION: Only run expensive OCR/Helmet logic every 5 frames
-            zone_tolerance = int(height * 0.35) 
-            if abs(cy - line_y) < zone_tolerance and frame_count % 5 == 0:
+            # SPEED OPTIMIZATION: Only run expensive OCR/Helmet logic every 10 frames
+            # and STOP once we find a clear result
+            zone_tolerance = int(height * 0.45) 
+            if abs(cy - line_y) < zone_tolerance and frame_count % 10 == 0:
                 if cache['plate'] is None:
                     plate = detector.read_license_plate(frame, clamped_ltrb)
                     if plate: cache['plate'] = plate
                         
                 if cache['class_name'] == 'motorcycle':
                     # Only stop if we have a definitive "Helmet" or "No Helmet"
-                    # We continue re-checking if we get "Checking..."
                     if cache['helmet'] is None or cache['helmet'] == "Checking...":
                         status = detector.check_helmet(frame, clamped_ltrb, track_id)
                         if status != "Checking...":
