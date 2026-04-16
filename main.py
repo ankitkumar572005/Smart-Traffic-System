@@ -48,20 +48,16 @@ def process_video(video_path, output_mp4, csv_path, progress_bar=None, status_te
             
         frame_count += 1
         
-        # 1. Detection (Optimized for speed: Skip every 2nd frame)
-        if frame_count % 2 == 0:
-            # Resize for AI (YOLO internally uses 640x640, so we match it for maximum speed)
-            scale = 640 / max(width, height)
-            ai_frame = cv2.resize(frame, (0,0), fx=scale, fy=scale)
-            detections_raw = detector.detect_vehicles(ai_frame)
-            
-            # Rescale boxes back to original size for tracking
-            detections = []
-            for det in detections_raw:
-                det['box'] = [b / scale for b in det['box']]
-                detections.append(det)
-        else:
-            detections = [] # Tracker will predict based on previous motion
+        # 1. Detection (Optimized with 640px internal scaling, but run on every frame for tracking stability)
+        scale = 640 / max(width, height)
+        ai_frame = cv2.resize(frame, (0, 0), fx=scale, fy=scale)
+        detections_raw = detector.detect_vehicles(ai_frame)
+        
+        # Rescale boxes back to original size for tracking and rendering
+        detections = []
+        for det in detections_raw:
+            det['box'] = [b / scale for b in det['box']]
+            detections.append(det)
         
         # 2. Tracking
         tracks = tracker.update(detections, frame)
