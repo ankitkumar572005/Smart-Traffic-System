@@ -2,7 +2,6 @@ import os
 import cv2
 import random
 import numpy as np
-import numpy as np
 import pytesseract
 from ultralytics import YOLO
 
@@ -18,6 +17,7 @@ class VehicleDetector:
         
         # Target classes from COCO dataset (we ignore pedestrians)
         self.target_classes = {
+            1: 'bicycle',
             2: 'car', 
             3: 'motorcycle', 
             5: 'bus', 
@@ -65,7 +65,16 @@ class VehicleDetector:
         
         if self.plate_model:
             # Inference using custom plate model on the vehicle ROI
-            pass
+            vehicle_roi = frame[y1:y2, x1:x2]
+            if vehicle_roi.shape[0] > 10 and vehicle_roi.shape[1] > 10:
+                results = self.plate_model(vehicle_roi, verbose=False)[0]
+                if len(results.boxes) > 0:
+                    px1, py1, px2, py2 = results.boxes[0].xyxy[0].tolist()
+                    roi = vehicle_roi[int(py1):int(py2), int(px1):int(px2)]
+                else:
+                    return None
+            else:
+                return None
         else:
             # Fallback behavior: We run OCR on the bottom 60% of the vehicle
             h = y2 - y1
@@ -88,7 +97,10 @@ class VehicleDetector:
                 
                 # Tesseract OCR: Specifically looking for alphanumeric characters
                 custom_config = r'--oem 3 --psm 7 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-                text = pytesseract.image_to_string(gray, config=custom_config)
+                try:
+                    text = pytesseract.image_to_string(gray, config=custom_config)
+                except Exception:
+                    text = ""
                 
                 if text:
                     # Basic cleanup - keep alphanumeric

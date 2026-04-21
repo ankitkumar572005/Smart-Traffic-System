@@ -4,7 +4,7 @@ class VehicleTracker:
     def __init__(self, max_age=30):
         # We restore the 'mobilenet' embedder (very light ~20MB). 
         # Since we removed the massive EasyOCR (~700MB), the app is now safe!
-        self.tracker = DeepSort(max_age=max_age, embedder='mobilenet', half=True)
+        self.tracker = DeepSort(max_age=max_age, embedder='mobilenet')
 
     def update(self, detections, frame):
         """
