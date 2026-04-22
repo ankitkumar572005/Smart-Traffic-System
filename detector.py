@@ -119,12 +119,22 @@ class VehicleDetector:
             
             if roi.shape[0] > 10 and roi.shape[1] > 10:
                 results = self.helmet_model(roi, verbose=False)[0]
-                # Classes for this model: 0:'With Helmet', 1:'Without Helmet' (varies by model, usually 0 or 1)
-                # But we'll just check if ANY helmet is detected in that ROI
+                
+                found_no_helmet = False
                 for box in results.boxes:
+                    conf = float(box.conf[0].item())
+                    if conf < 0.35:  # Filter out low-confidence ghost detections
+                        continue
+                        
                     cls = int(box.cls[0].item())
-                    # Assuming safety-helmet model class list: 0: 'Helmet', 1: 'No Helmet'
-                    return "Helmet" if cls == 0 else "No Helmet"
+                    if cls == 0:
+                        # If we definitively spot a helmet anywhere in the ROI, return immediately
+                        return "Helmet"
+                    elif cls == 1:
+                        found_no_helmet = True
+                        
+                if found_no_helmet:
+                    return "No Helmet"
             return "Checking..."
         else:
             # Fallback behavior
